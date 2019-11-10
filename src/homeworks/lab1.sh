@@ -11,3 +11,6 @@ sh ./test-wc.sh
 # part 3
 cd ../mapreduce
 go test -race -run TestParallel
+
+# part 4
+go test -run Failure

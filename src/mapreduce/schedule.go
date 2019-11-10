@@ -39,32 +39,37 @@ func schedule(jobName string, mapFiles []string, nReduce int, phase jobPhase, re
 	var quit chan int
 	quit = make(chan int)
 
+	var taskFunc func(i int, freeWorkerAddress string)
+	taskFunc = func(i int, freeWorkerAddress string) {
+		var args DoTaskArgs
+		var file string
+		if phase == mapPhase {
+			file = mapFiles[i]
+			args = DoTaskArgs{jobName, file, phase, i, n_other}
+		}
+		args = DoTaskArgs{jobName, file, phase, i, n_other}
+		ret := call(freeWorkerAddress, "Worker.DoTask", args, nil)
+		fmt.Printf("call %d, ret = %v\n", i, ret)
+		if !ret {
+			log.Printf("Worker %s might be broken.\n", freeWorkerAddress)
+			freeWorkerAddress = <-registerChan
+			go taskFunc(i, freeWorkerAddress)
+		} else {
+			fmt.Printf("release %s at %d, channel_size = %d, ntasks = %d\n", freeWorkerAddress, i, len(registerChan), ntasks)
+			fmt.Println("caps = ", cap(registerChan))
+			wg.Done()
+			select {
+			case <-quit:
+			case registerChan <- freeWorkerAddress:
+			}
+		}
+	}
+
 	for i := 0; i < ntasks; i++ {
 		var freeWorkerAddress string
 		freeWorkerAddress = <-registerChan
 		wg.Add(1)
-		go func(i int) {
-			var args DoTaskArgs
-			var file string
-			if phase == mapPhase {
-				file = mapFiles[i]
-				args = DoTaskArgs{jobName, file, phase, i, n_other}
-			}
-			args = DoTaskArgs{jobName, file, phase, i, n_other}
-			ret := call(freeWorkerAddress, "Worker.DoTask", args, nil)
-			fmt.Printf("call %d, ret = %v\n", i, ret)
-			if !ret {
-				log.Fatal("Worker is broken.")
-			} else {
-				fmt.Printf("release %s at %d, channel_size = %d, ntasks = %d\n", freeWorkerAddress, i, len(registerChan), ntasks)
-				fmt.Println("caps = ", cap(registerChan))
-				wg.Done()
-				select {
-				case <-quit:
-				case registerChan <- freeWorkerAddress:
-				}
-			}
-		}(i)
+		go taskFunc(i, freeWorkerAddress)
 	}
 	wg.Wait()
 	close(quit)
