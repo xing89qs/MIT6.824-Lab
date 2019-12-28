@@ -80,8 +80,10 @@ func (rf *Raft) GetState() (int, bool) {
 	var term int
 	var isleader bool
 	// Your code here (2A).
+	rf.mu.Lock()
 	term = rf.currentTerm
 	isleader = (rf.state == LEADER)
+	rf.mu.Unlock()
 	return term, isleader
 }
 
@@ -150,18 +152,28 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	DPrintf("handleRequestVote in %v from %v", rf.me, args.CandidateId)
 	rf.mu.Lock()
 	rf.hasReceivedFromCandidate = true
-	rf.mu.Unlock()
 	// Your code here (2A, 2B).
 	if args.Term < rf.currentTerm {
+		rf.mu.Unlock()
 		reply.VoteGranted = false
 		return
+	} else {
+		if args.Term > rf.currentTerm {
+			rf.mu.Unlock()
+			rf.BecomeFollower()
+		} else {
+			rf.mu.Unlock()
+		}
 	}
 	rf.mu.Lock()
+	rf.hasReceivedFromCandidate = true
 	rf.currentTerm = args.Term
+	DPrintf("current %v: state = %v, vote = %v", rf.me, rf.state, rf.votedFor)
 	if rf.votedFor == "" || rf.votedFor == args.CandidateId {
 		reply.Term = rf.currentTerm
 		reply.VoteGranted = true
 		rf.votedFor = args.CandidateId
+		DPrintf("vote granted by %v to %v", rf.me, args.CandidateId)
 	}
 	rf.mu.Unlock()
 }
@@ -215,13 +227,19 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	rf.mu.Lock()
 	DPrintf("handleAppendEntries in %v from %v", rf.me, args.LeaderIndex)
 	rf.hasReceivedFromLeader = true
+	rf.votedFor = ""
 	rf.mu.Unlock()
 	reply.Term = rf.currentTerm
 	if args.Term < rf.currentTerm {
 		reply.Success = false
 		return
+	} else if args.Term > rf.currentTerm {
+		rf.BecomeFollower()
 	}
+	rf.mu.Lock()
 	rf.currentTerm = args.Term
+	rf.hasReceivedFromLeader = true
+	rf.mu.Unlock()
 	reply.Success = true
 	return
 }
@@ -278,6 +296,7 @@ func (rf *Raft) BecomeFollower() {
 	rf.hasReceivedFromLeader = false
 	rf.hasReceivedFromCandidate = false
 	rf.state = FOLLOWER
+	rf.votedFor = ""
 	rf.mu.Unlock()
 }
 
@@ -297,7 +316,9 @@ func (rf *Raft) BecomeCandidate() {
 			continue
 		}
 		go func(id int) {
+			rf.mu.Lock()
 			args := RequestVoteArgs{rf.currentTerm, rf.id}
+			rf.mu.Unlock()
 			reply := RequestVoteReply{}
 			ok := rf.sendRequestVote(id, &args, &reply)
 			if ok {
@@ -307,7 +328,9 @@ func (rf *Raft) BecomeCandidate() {
 					rf.BecomeFollower()
 				} else {
 					if reply.VoteGranted {
-						rf.voteCount += 1
+						if reply.Term == rf.currentTerm {
+							rf.voteCount += 1
+						}
 					}
 				}
 				rf.mu.Unlock()
@@ -334,7 +357,9 @@ func (rf *Raft) BecomeLeader() {
 			if ok {
 				rf.mu.Lock()
 				if reply.Term > rf.currentTerm {
+					rf.mu.Lock()
 					rf.currentTerm = reply.Term
+					rf.mu.Unlock()
 					rf.BecomeFollower()
 				}
 				rf.mu.Unlock()
@@ -346,29 +371,42 @@ func (rf *Raft) BecomeLeader() {
 // go routine that will periorically do leeader election
 func (rf *Raft) LeaderElection() {
 	for {
+		rf.mu.Lock()
 		DPrintf("current %v: term = %v, state = %s", rf.me, rf.currentTerm, rf.state)
-		switch rf.state {
+		state := rf.state
+		rf.mu.Unlock()
+		switch state {
 		case LEADER:
-			time.Sleep(time.Duration(200) * time.Millisecond)
 			rf.BecomeLeader()
+			time.Sleep(time.Duration(200) * time.Millisecond)
 		case FOLLOWER:
-			time.Sleep(getElectionTimeout())
+			rf.mu.Lock()
 			if !rf.hasReceivedFromLeader && !rf.hasReceivedFromCandidate {
+				rf.mu.Unlock()
 				rf.BecomeCandidate()
 			} else {
+				rf.mu.Unlock()
 				rf.BecomeFollower()
 			}
-		case CANDIDATE:
 			time.Sleep(getElectionTimeout())
+		case CANDIDATE:
+			rf.mu.Lock()
+			DPrintf("I'm candidate %v", rf.me)
+			rf.mu.Unlock()
 			if rf.hasReceivedFromLeader {
 				rf.BecomeFollower()
 			} else {
+				rf.mu.Lock()
+				DPrintf("received vote: %v", rf.voteCount)
 				if rf.voteCount > len(rf.peers)/2 {
+					rf.mu.Unlock()
 					rf.BecomeLeader()
 				} else {
+					rf.mu.Unlock()
 					rf.BecomeCandidate()
 				}
 			}
+			time.Sleep(getElectionTimeout())
 		}
 	}
 
