@@ -298,6 +298,7 @@ func (rf *Raft) BecomeCandidate() {
 	rf.voteCount = 1
 	rf.votedFor = rf.id
 	rf.currentTerm += 1
+	copiedCurrentTerm = rf.currentTerm
 
 	for i, _ := range rf.peers {
 		if i == rf.me {
@@ -305,7 +306,7 @@ func (rf *Raft) BecomeCandidate() {
 		}
 		go func(id int) {
 			rf.mu.RLock()
-			args := RequestVoteArgs{rf.currentTerm, rf.id}
+			args := RequestVoteArgs{copiedCurrentTerm, rf.id}
 			reply := RequestVoteReply{}
 			rf.mu.RUnlock()
 			ok := rf.sendRequestVote(id, &args, &reply)
