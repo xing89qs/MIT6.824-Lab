@@ -64,13 +64,13 @@ type Raft struct {
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
 
-	hasReceivedFromLeader    bool
-	hasReceivedFromCandidate bool
-	currentTerm              int
-	votedFor                 string
-	state                    string
-	id                       string
-	voteCount                int
+	lastReceivedFromLeader    int64
+	lastReceivedFromCandidate int64
+	currentTerm               int
+	votedFor                  string
+	state                     string
+	id                        string
+	voteCount                 int
 }
 
 // return currentTerm and whether this server
@@ -151,7 +151,7 @@ type RequestVoteReply struct {
 func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	rf.mu.Lock()
 	DPrintf("handleRequestVote in %v from %v", rf.me, args.CandidateId)
-	rf.hasReceivedFromCandidate = true
+	rf.lastReceivedFromCandidate = NowMilli()
 	// Your code here (2A, 2B).
 	if args.Term < rf.currentTerm {
 		rf.mu.Unlock()
@@ -160,7 +160,6 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	} else if args.Term > rf.currentTerm {
 		rf.BecomeFollower()
 	}
-	rf.hasReceivedFromCandidate = true
 	rf.currentTerm = args.Term
 	DPrintf("current %v: state = %v, vote = %v", rf.me, rf.state, rf.votedFor)
 	if rf.votedFor == "" || rf.votedFor == args.CandidateId {
@@ -220,7 +219,7 @@ type AppendEntriesReply struct {
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	DPrintf("handleAppendEntries in %v from %v", rf.me, args.LeaderIndex)
-	rf.hasReceivedFromLeader = true
+	rf.lastReceivedFromLeader = NowMilli()
 	rf.votedFor = ""
 	reply.Term = rf.currentTerm
 	if args.Term < rf.currentTerm {
@@ -231,7 +230,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		rf.BecomeFollower()
 	}
 	rf.currentTerm = args.Term
-	rf.hasReceivedFromLeader = true
 	rf.mu.Unlock()
 	reply.Success = true
 }
@@ -276,29 +274,31 @@ func (rf *Raft) Kill() {
 	// Your code here, if desired.
 }
 
+func NowMilli() int64 {
+	return time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+}
+
 const ELECTION_TIMEOUT = 300
+const SMALL_SLEEP_GAP = time.Duration(10) * time.Millisecond
 
 func getElectionTimeout() time.Duration {
-	return time.Duration(rand.Intn(ELECTION_TIMEOUT)+ELECTION_TIMEOUT) * time.Millisecond
+	return time.Duration(rand.Intn(ELECTION_TIMEOUT) + ELECTION_TIMEOUT)
 }
 
 func (rf *Raft) BecomeFollower() {
 	DPrintf("%v become follower.", rf.me)
-	rf.hasReceivedFromLeader = false
-	rf.hasReceivedFromCandidate = false
 	rf.state = FOLLOWER
 	rf.votedFor = ""
 }
 
 func (rf *Raft) BecomeCandidate() {
 	DPrintf("%v become candidate.", rf.me)
-	rf.hasReceivedFromLeader = false
-	rf.hasReceivedFromCandidate = false
 	rf.state = CANDIDATE
 	rf.voteCount = 1
 	rf.votedFor = rf.id
 	rf.currentTerm += 1
-	copiedCurrentTerm = rf.currentTerm
+	copiedCurrentTerm := rf.currentTerm
+	rf.lastReceivedFromCandidate = NowMilli()
 
 	for i, _ := range rf.peers {
 		if i == rf.me {
@@ -330,8 +330,6 @@ func (rf *Raft) BecomeCandidate() {
 
 func (rf *Raft) BecomeLeader() {
 	DPrintf("%v become leader.", rf.me)
-	rf.hasReceivedFromLeader = false
-	rf.hasReceivedFromCandidate = false
 	rf.state = LEADER
 	for i, _ := range rf.peers {
 		if i == rf.me {
@@ -343,6 +341,7 @@ func (rf *Raft) BecomeLeader() {
 			reply := AppendEntriesReply{}
 			rf.mu.RUnlock()
 			ok := rf.sendAppendEntries(id, &args, &reply)
+			DPrintf("try to send rpc from %v to %v, %v", rf.me, id, ok)
 			rf.mu.Lock()
 			if ok {
 				if reply.Term > rf.currentTerm {
@@ -352,6 +351,14 @@ func (rf *Raft) BecomeLeader() {
 			}
 			rf.mu.Unlock()
 		}(i)
+	}
+}
+
+func Max(x, y int64) int64 {
+	if x > y {
+		return x
+	} else {
+		return y
 	}
 }
 
@@ -370,28 +377,52 @@ func (rf *Raft) LeaderElection() {
 			time.Sleep(time.Duration(200) * time.Millisecond)
 		case FOLLOWER:
 			rf.mu.Lock()
-			if !rf.hasReceivedFromLeader && !rf.hasReceivedFromCandidate {
-				rf.BecomeCandidate()
-			} else {
-				rf.BecomeFollower()
-			}
+			timeout := int64(getElectionTimeout())
+			lastReceivedFromLeader := rf.lastReceivedFromLeader
+			lastReceivedFromCandidate := rf.lastReceivedFromCandidate
 			rf.mu.Unlock()
-			time.Sleep(getElectionTimeout())
+			for {
+				rf.mu.Lock()
+				if lastReceivedFromLeader != rf.lastReceivedFromLeader ||
+					lastReceivedFromCandidate != rf.lastReceivedFromCandidate {
+					rf.BecomeFollower()
+					rf.mu.Unlock()
+					break
+				}
+				if timeout < NowMilli()-Max(lastReceivedFromLeader, lastReceivedFromCandidate) {
+					rf.BecomeCandidate()
+					rf.mu.Unlock()
+					break
+				}
+				rf.mu.Unlock()
+				time.Sleep(SMALL_SLEEP_GAP)
+			}
 		case CANDIDATE:
 			rf.mu.Lock()
-			DPrintf("I'm candidate %v", rf.me)
-			if rf.hasReceivedFromLeader {
-				rf.BecomeFollower()
-			} else {
-				DPrintf("received vote: %v", rf.voteCount)
-				if rf.voteCount > len(rf.peers)/2 {
-					rf.BecomeLeader()
-				} else {
-					rf.BecomeCandidate()
-				}
-			}
+			lastReceivedFromLeader := rf.lastReceivedFromLeader
+			lastReceivedFromCandidate := rf.lastReceivedFromCandidate
+			timeout := int64(getElectionTimeout())
 			rf.mu.Unlock()
-			time.Sleep(getElectionTimeout())
+			for {
+				rf.mu.Lock()
+				if lastReceivedFromLeader != rf.lastReceivedFromLeader {
+					rf.BecomeFollower()
+					rf.mu.Unlock()
+					break
+				}
+				if timeout < NowMilli()-lastReceivedFromCandidate {
+					DPrintf("received vote: %v", rf.voteCount)
+					if rf.voteCount > len(rf.peers)/2 {
+						rf.BecomeLeader()
+					} else {
+						rf.BecomeCandidate()
+					}
+					rf.mu.Unlock()
+					break
+				}
+				rf.mu.Unlock()
+				time.Sleep(SMALL_SLEEP_GAP)
+			}
 		}
 	}
 
@@ -421,8 +452,8 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.currentTerm = 0
 	rf.votedFor = ""
 	rf.id = "server" + strconv.Itoa(rf.me)
-	rf.hasReceivedFromLeader = false
-	rf.hasReceivedFromCandidate = false
+	rf.lastReceivedFromLeader = 0
+	rf.lastReceivedFromCandidate = 0
 	rf.mu.Unlock()
 
 	go rf.LeaderElection()
