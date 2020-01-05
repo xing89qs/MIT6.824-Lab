@@ -172,6 +172,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 		rf.mu.Unlock()
 		return
 	} else if args.Term > rf.currentTerm {
+		rf.votedFor = ""
 		rf.BecomeFollower()
 	}
 	rf.currentTerm = args.Term
@@ -235,10 +236,10 @@ type AppendEntriesArgs struct {
 	Term        int // leader's term
 	LeaderIndex int // leader's id
 
-	PrevLogIndex int         // index of log entry immediately preceding new ones
-	PrevLogTerm  int         // term of PrevLogIndex
-	Entries      []*LogEntry // log entries
-	LeaderCommit int         // leader's commit index
+	PrevLogIndex int        // index of log entry immediately preceding new ones
+	PrevLogTerm  int        // term of PrevLogIndex
+	Entries      []LogEntry // log entries
+	LeaderCommit int        // leader's commit index
 }
 
 type AppendEntriesReply struct {
@@ -273,6 +274,12 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		rf.mu.Unlock()
 		reply.Success = false
 		return
+	} else if args.Term > rf.currentTerm {
+		rf.currentTerm = args.Term
+		rf.BecomeFollower()
+		rf.mu.Unlock()
+		reply.Success = false
+		return
 	} else if args.PrevLogIndex >= len(rf.log) ||
 		args.PrevLogTerm != rf.log[args.PrevLogIndex].Term {
 		rf.mu.Unlock()
@@ -292,18 +299,17 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			lastValidIndex = entry.Index
 		}
 		rf.log = rf.log[0 : lastValidIndex+1]
-		for i := lastValidIndex - args.PrevLogIndex; i < len(args.Entries); i++ {
-			rf.log = append(rf.log, args.Entries[i])
+		l := len(args.Entries)
+		entries := make([]LogEntry, l)
+		copy(entries, args.Entries)
+		for i := lastValidIndex - args.PrevLogIndex; i < l; i++ {
+			rf.log = append(rf.log, &entries[i])
 		}
 		if args.LeaderCommit > rf.commitIndex {
 			rf.commitIndex = MinInt(args.LeaderCommit, len(rf.log)-1)
 		}
 
-		if args.Term > rf.currentTerm {
-			rf.BecomeFollower()
-		}
 	}
-	rf.currentTerm = args.Term
 	rf.mu.Unlock()
 	reply.Success = true
 }
@@ -369,8 +375,6 @@ func getElectionTimeout() time.Duration {
 func (rf *Raft) BecomeFollower() {
 	DPrintf("%v become follower.", rf.me)
 	rf.state = FOLLOWER
-	rf.votedFor = ""
-
 }
 
 func (rf *Raft) BecomeCandidate() {
@@ -388,12 +392,17 @@ func (rf *Raft) BecomeCandidate() {
 		}
 		go func(id int) {
 			rf.mu.RLock()
+			l := len(rf.log)
 			args := RequestVoteArgs{copiedCurrentTerm,
-				rf.id, len(rf.log) - 1, rf.log[len(rf.log)-1].Term}
+				rf.id, l - 1, rf.log[l-1].Term}
 			reply := RequestVoteReply{}
 			rf.mu.RUnlock()
 			ok := rf.sendRequestVote(id, &args, &reply)
 			rf.mu.Lock()
+			if rf.currentTerm != args.Term {
+				rf.mu.Unlock()
+				return
+			}
 			if ok {
 				if reply.Term > rf.currentTerm {
 					rf.currentTerm = reply.Term
@@ -439,8 +448,11 @@ func (rf *Raft) BecomeLeader() {
 		}
 		go func(id int) {
 			rf.mu.RLock()
-			DPrintf2("Try entry: len = %v, id =  %v", len(rf.log), rf.nextIndex[id])
-			entry := rf.log[rf.nextIndex[id]:]
+			DPrintf3("Try entry: len = %v, id =  %v", len(rf.log), rf.nextIndex[id])
+			entry := make([]LogEntry, len(rf.log)-rf.nextIndex[id])
+			for j, e := range rf.log[rf.nextIndex[id]:] {
+				entry[j] = *e
+			}
 			args := AppendEntriesArgs{rf.currentTerm, rf.me,
 				rf.nextIndex[id] - 1, rf.log[rf.nextIndex[id]-1].Term,
 				entry, rf.commitIndex,
@@ -450,13 +462,18 @@ func (rf *Raft) BecomeLeader() {
 			ok := rf.sendAppendEntries(id, &args, &reply)
 			DPrintf("try to send rpc from %v to %v, %v", rf.me, id, ok)
 			rf.mu.Lock()
+			if rf.currentTerm != args.Term {
+				rf.mu.Unlock()
+				return
+			}
 			if ok {
 				if reply.Term > rf.currentTerm {
 					rf.currentTerm = reply.Term
 					rf.BecomeFollower()
 				} else if reply.Success {
-					if len(args.Entries) > 0 {
-						rf.matchIndex[id] = args.Entries[len(args.Entries)-1].Index
+					l := len(args.Entries)
+					if l > 0 {
+						rf.matchIndex[id] = args.Entries[l-1].Index
 						rf.nextIndex[id] = rf.matchIndex[id] + 1
 					}
 				} else {
@@ -495,7 +512,7 @@ func Max(x, y int64) int64 {
 func (rf *Raft) ApplyLogEntry() {
 	for {
 		rf.commit()
-		time.Sleep(time.Duration(200) * time.Millisecond)
+		time.Sleep(time.Duration(50) * time.Millisecond)
 	}
 }
 
@@ -511,7 +528,7 @@ func (rf *Raft) LeaderElection() {
 			rf.mu.Lock()
 			rf.BecomeLeader()
 			rf.mu.Unlock()
-			time.Sleep(time.Duration(200) * time.Millisecond)
+			time.Sleep(time.Duration(120) * time.Millisecond)
 		case FOLLOWER:
 			rf.mu.Lock()
 			timeout := int64(getElectionTimeout())
@@ -552,8 +569,9 @@ func (rf *Raft) LeaderElection() {
 					if rf.voteCount > len(rf.peers)/2 {
 						rf.matchIndex = make([]int, len(rf.peers))
 						rf.nextIndex = make([]int, len(rf.peers))
+						l := len(rf.log)
 						for i, _ := range rf.peers {
-							rf.nextIndex[i] = len(rf.log)
+							rf.nextIndex[i] = l
 						}
 						rf.BecomeLeader()
 					} else {
