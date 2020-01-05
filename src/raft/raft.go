@@ -246,11 +246,21 @@ type AppendEntriesReply struct {
 	Success bool
 }
 
-func (rf *Raft) commit(low, high int) {
-	for i := low; i <= high; i++ {
+func (rf *Raft) commit() {
+	rf.mu.RLock()
+	low := rf.lastApplied + 1
+	commitIndex := rf.commitIndex
+	rf.mu.RUnlock()
+	for i := low; i <= commitIndex; i++ {
+		rf.mu.RLock()
 		DPrintf2("%v: commit log %v. state = %s", rf.me, i, rf.state)
-		rf.applyCh <- ApplyMsg{true, rf.log[i].Command, i}
+		msg := ApplyMsg{true, rf.log[i].Command, i}
+		rf.mu.RUnlock()
+		rf.applyCh <- msg
 	}
+	rf.mu.Lock()
+	rf.lastApplied = commitIndex
+	rf.mu.Unlock()
 }
 
 func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply) {
@@ -286,9 +296,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 			rf.log = append(rf.log, args.Entries[i])
 		}
 		if args.LeaderCommit > rf.commitIndex {
-			commitIndex := rf.commitIndex
 			rf.commitIndex = MinInt(args.LeaderCommit, len(rf.log)-1)
-			rf.commit(commitIndex+1, rf.commitIndex)
 		}
 
 		if args.Term > rf.currentTerm {
@@ -409,7 +417,6 @@ func (rf *Raft) BecomeLeader() {
 	//		DPrintf2("%v %v", rf.nextIndex[i], rf.matchIndex[i])
 	//}
 	rf.state = LEADER
-	commitIndex := rf.commitIndex
 	for i := len(rf.log) - 1; i > rf.commitIndex; i++ {
 		cnt := 0
 		for j, _ := range rf.peers {
@@ -426,7 +433,6 @@ func (rf *Raft) BecomeLeader() {
 			break
 		}
 	}
-	rf.commit(commitIndex+1, rf.commitIndex)
 	for i, _ := range rf.peers {
 		if i == rf.me {
 			continue
@@ -486,15 +492,19 @@ func Max(x, y int64) int64 {
 	}
 }
 
+func (rf *Raft) ApplyLogEntry() {
+	for {
+		rf.commit()
+		time.Sleep(time.Duration(200) * time.Millisecond)
+	}
+}
+
 // go routine that will periorically do leeader election
 func (rf *Raft) LeaderElection() {
 	for {
 		rf.mu.Lock()
 		DPrintf3("current %v: term = %v, state = %s %v", rf.me, rf.currentTerm, rf.state, rf.commitIndex)
 		state := rf.state
-		if rf.commitIndex > rf.lastApplied {
-			rf.lastApplied = MinInt(rf.commitIndex, len(rf.log)-1)
-		}
 		rf.mu.Unlock()
 		switch state {
 		case LEADER:
@@ -601,6 +611,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.mu.Unlock()
 
 	go rf.LeaderElection()
+	go rf.ApplyLogEntry()
 
 	// initialize from state persisted before a crash
 	rf.readPersist(persister.ReadRaftState())
