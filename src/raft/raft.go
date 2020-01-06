@@ -169,6 +169,7 @@ func (rf *Raft) RequestVote(args *RequestVoteArgs, reply *RequestVoteReply) {
 	rf.lastReceivedFromCandidate = NowMilli()
 	// Your code here (2A, 2B).
 	if args.Term < rf.currentTerm {
+		reply.Term = rf.currentTerm
 		rf.mu.Unlock()
 		return
 	} else if args.Term > rf.currentTerm {
@@ -268,7 +269,6 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	rf.mu.Lock()
 	DPrintf2("handleAppendEntries in %v from %v", rf.me, args.LeaderIndex)
 	rf.lastReceivedFromLeader = NowMilli()
-	rf.votedFor = ""
 	reply.Term = rf.currentTerm
 	if args.Term < rf.currentTerm {
 		rf.mu.Unlock()
@@ -375,6 +375,7 @@ func getElectionTimeout() time.Duration {
 func (rf *Raft) BecomeFollower() {
 	DPrintf("%v become follower.", rf.me)
 	rf.state = FOLLOWER
+	rf.voteCount = 0
 }
 
 func (rf *Raft) BecomeCandidate() {
@@ -407,7 +408,7 @@ func (rf *Raft) BecomeCandidate() {
 				if reply.Term > rf.currentTerm {
 					rf.currentTerm = reply.Term
 					rf.BecomeFollower()
-				} else {
+				} else if rf.state == CANDIDATE {
 					if reply.VoteGranted {
 						if reply.Term == rf.currentTerm {
 							rf.voteCount += 1
@@ -564,21 +565,24 @@ func (rf *Raft) LeaderElection() {
 					rf.mu.Unlock()
 					break
 				}
-				if timeout < NowMilli()-lastReceivedFromCandidate {
-					DPrintf("received vote: %v", rf.voteCount)
-					if rf.voteCount > len(rf.peers)/2 {
-						rf.matchIndex = make([]int, len(rf.peers))
-						rf.nextIndex = make([]int, len(rf.peers))
-						l := len(rf.log)
-						for i, _ := range rf.peers {
-							rf.nextIndex[i] = l
-						}
-						rf.BecomeLeader()
-					} else {
-						rf.BecomeCandidate()
-					}
+				if rf.state != CANDIDATE {
 					rf.mu.Unlock()
 					break
+				}
+				if timeout < NowMilli()-lastReceivedFromCandidate {
+					rf.BecomeCandidate()
+					rf.mu.Unlock()
+					break
+				}
+				DPrintf("received vote: %v", rf.voteCount)
+				if rf.voteCount > len(rf.peers)/2 {
+					rf.matchIndex = make([]int, len(rf.peers))
+					rf.nextIndex = make([]int, len(rf.peers))
+					l := len(rf.log)
+					for i, _ := range rf.peers {
+						rf.nextIndex[i] = l
+					}
+					rf.BecomeLeader()
 				}
 				rf.mu.Unlock()
 				time.Sleep(SMALL_SLEEP_GAP)
