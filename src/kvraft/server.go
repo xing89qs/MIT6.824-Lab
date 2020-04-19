@@ -1,4 +1,4 @@
-package raftkv
+package kvraft
 
 import (
 	"labgob"
@@ -6,7 +6,6 @@ import (
 	"log"
 	"raft"
 	"sync"
-	"time"
 )
 
 const Debug = 1
@@ -58,17 +57,13 @@ type KVServer struct {
 
 func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 	// Your code here.
-	term, isLeader := kv.rf.GetState()
+	_, isLeader := kv.rf.GetState()
 	if !isLeader {
 		reply.Err = "This is not the leader!"
 		reply.WrongLeader = true
 		return
 	}
 	reply.WrongLeader = false
-	if kv.raftCurrentCommitTerm < term {
-		reply.Err = "Leader might contain stale data."
-		return
-	}
 	key := args.Key
 	value := kv.data[key]
 	reply.Value = value
@@ -83,15 +78,17 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 	seriesNumber := args.SeriesNumber
 	op := Op{key, value, command, seriesNumber, args.ClientId}
 	opkey := OpKey{args.ClientId, args.SeriesNumber}
-	DPrintf("%s: %s %s", op.Command, op.Key, op.Value)
+	kv.mu.Lock()
 
 	_, isLeader := kv.rf.GetState()
 	reply.WrongLeader = !isLeader
 	if !isLeader {
 		reply.Err = "This is not the leader!"
+		kv.mu.Unlock()
 		return
 	}
-	if args.SeriesNumber <= kv.lastExecuteSerialNumber[args.ClientId] {
+	if lastSerialNumber, ok := kv.lastExecuteSerialNumber[args.ClientId]; ok && args.SeriesNumber <= lastSerialNumber {
+		kv.mu.Unlock()
 		return
 	} else {
 		if _, ok := kv.commitChannel[opkey]; !ok {
@@ -99,12 +96,10 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		}
 		_, _, isLeader = kv.rf.Start(op)
 	}
+	kv.mu.Unlock()
 	select {
 	case <-kv.commitChannel[opkey]:
 		reply.Err = ""
-	case <-time.After(500 * time.Millisecond):
-		DPrintf("timeout!")
-		reply.Err = "Timeout."
 	}
 }
 
@@ -115,13 +110,15 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 // turn off debug output from this instance.
 //
 func (kv *KVServer) Kill() {
+	//DPrintf("Server command %s: %s %s, %v, lastExecuteSerialNumber: %v, rf_state = %v", op.Command, op.Key, op.Value, seriesNumber, kv.lastExecuteSerialNumber[opkey.ClientId], isL)
 	kv.rf.Kill()
 	// Your code here, if desired.
 	kv.quit <- 0
 }
 
 func (kv *KVServer) execute(op *Op) {
-	DPrintf("Execute")
+	//DPrintf("Execute %v", op)
+	kv.mu.Lock()
 	value, ok := kv.data[op.Key]
 	if !ok {
 		value = ""
@@ -132,14 +129,17 @@ func (kv *KVServer) execute(op *Op) {
 		value = op.Value
 	} else {
 		log.Printf("Invalid command %s!", op.Command)
+		kv.mu.Unlock()
+		return
 	}
 	kv.data[op.Key] = value
 	opkey := OpKey{op.ClientId, op.SeriesNumber}
-	kv.commitChannel[opkey] <- 1
 	kv.lastExecuteSerialNumber[op.ClientId] = op.SeriesNumber
+	kv.mu.Unlock()
+	kv.commitChannel[opkey] <- 1
 }
 
-func (kv *KVServer) monitorApplyCh(applyCh chan raft.ApplyMsg, quit chan int) {
+func (kv *KVServer) monitorApplyCh(applyCh chan raft.ApplyMsg) {
 loop:
 	for {
 		select {
@@ -148,12 +148,10 @@ loop:
 			case Op:
 				op := msg.Command.(Op)
 				kv.execute(&op)
-			case raft.CommandNoOp:
-				kv.raftCurrentCommitTerm = msg.Command.(raft.CommandNoOp).Term
 			default:
 				log.Printf("%s doesn't have type Op.", msg.Command)
 			}
-		case <-quit:
+		case <-kv.quit:
 			break loop
 		}
 	}
@@ -185,14 +183,14 @@ func StartKVServer(servers []*labrpc.ClientEnd, me int, persister *raft.Persiste
 	// You may need initialization code here.
 
 	kv.applyCh = make(chan raft.ApplyMsg)
-	kv.quit = make(chan int)
+	kv.quit = make(chan int, 1)
 	kv.rf = raft.Make(servers, me, persister, kv.applyCh)
 	kv.data = make(map[string]string)
 	kv.commitChannel = make(map[OpKey]chan int)
 	kv.lastExecuteSerialNumber = make(map[int64]int)
 
 	// You may need initialization code here.
-	go kv.monitorApplyCh(kv.applyCh, kv.quit)
+	go kv.monitorApplyCh(kv.applyCh)
 
 	return kv
 }

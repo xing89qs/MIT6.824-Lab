@@ -51,7 +51,8 @@ type ApplyMsg struct {
 type LogEntry struct {
 	Index   int         // index of the command
 	Command interface{} // command for the state machine
-	Term    int         // term when entry was received by leader
+	NoOp    bool
+	Term    int // term when entry was received by leader
 }
 
 type CommandNoOp struct {
@@ -280,9 +281,8 @@ func (rf *Raft) apply() {
 	rf.mu.RUnlock()
 	for i := low; i <= commitIndex; i++ {
 		rf.mu.RLock()
-		DPrintf2("%v: commit log %v. state = %s", rf.me, i, rf.state)
-		_, ok := rf.log[i].Command.(CommandNoOp)
-		msg := ApplyMsg{!ok, rf.log[i].Command, i}
+		// DPrintf3("%v: commit log %v. state = %s", rf.me, rf.log[i], rf.state)
+		msg := ApplyMsg{!rf.log[i].NoOp, rf.log[i].Command, i}
 		rf.mu.RUnlock()
 		rf.applyCh <- msg
 	}
@@ -298,7 +298,6 @@ func compareLog(log1 LogEntry, log2 LogEntry) bool {
 
 func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
-	DPrintf3("%v", args)
 	// DPrintf3("%v %v %v", rf.me, args, reply)
 	DPrintf2("handleAppendEntries in %v from %v", rf.me, args.LeaderIndex)
 	rf.lastReceivedFromLeader = NowMilli()
@@ -349,7 +348,7 @@ func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply)
 }
 
 func (rf *Raft) sendAppendEntries(server int, args AppendEntriesArgs, reply *AppendEntriesReply) bool {
-	DPrintf3("sendAppendEntries from %v to %v, %v", rf.me, server, args)
+	//DPrintf3("sendAppendEntries from %v to %v, %v", rf.me, server, args)
 	ok := rf.peers[server].Call("Raft.AppendEntries", args, reply)
 	return ok
 }
@@ -373,14 +372,14 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
 	rf.mu.Lock()
 	defer rf.mu.Unlock()
-	return rf.startCommand(command)
+	return rf.startCommand(command, false)
 }
 
-func (rf *Raft) startCommand(command interface{}) (int, int, bool) {
+func (rf *Raft) startCommand(command interface{}, noop bool) (int, int, bool) {
 	isLeader := (rf.state == LEADER)
 	index := len(rf.log)
 	term := rf.currentTerm
-	entry := LogEntry{index, command, term}
+	entry := LogEntry{index, command, noop, term}
 	if isLeader {
 		rf.log = append(rf.log, entry)
 		rf.persist()
@@ -470,7 +469,7 @@ func (rf *Raft) BecomeLeader() {
 	//		DPrintf2("%v %v", rf.nextIndex[i], rf.matchIndex[i])
 	//}
 	rf.state = LEADER
-	rf.StartNoOp()
+	// rf.StartNoOp()
 	for i := len(rf.log) - 1; i > rf.commitIndex; i-- {
 		cnt := 0
 		for j, _ := range rf.peers {
@@ -500,6 +499,7 @@ func (rf *Raft) BecomeLeader() {
 				entry[j].Index = e.Index
 				entry[j].Command = e.Command
 				entry[j].Term = e.Term
+				entry[j].NoOp = e.NoOp
 			}
 			args = AppendEntriesArgs{rf.currentTerm, rf.me,
 				rf.nextIndex[id] - 1, rf.log[rf.nextIndex[id]-1].Term,
@@ -581,9 +581,7 @@ func (rf *Raft) StartNoOp() {
 	if !rf.hasStartNoOp {
 		rf.hasStartNoOp = true
 		DPrintf3("start no-op command")
-		commandNoOp := CommandNoOp{Term: rf.currentTerm}
-		rf.startCommand(commandNoOp)
-		//rf.startCommand(-1)
+		rf.startCommand(nil, true)
 	}
 }
 
@@ -592,7 +590,7 @@ func (rf *Raft) LeaderElection() {
 LEADER_ELECTION_LOOP:
 	for {
 		rf.mu.Lock()
-		DPrintf3("current %v: term = %v, state = %s, commit = %v, log = %v", rf.me, rf.currentTerm, rf.state, rf.commitIndex, len(rf.log))
+		//DPrintf3("current %v: term = %v, state = %s, commit = %v, log = %v", rf.me, rf.currentTerm, rf.state, rf.commitIndex, len(rf.log))
 		state := rf.state
 		rf.mu.Unlock()
 		switch state {
@@ -699,7 +697,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.commitIndex = 0
 	rf.lastApplied = 0
 	rf.log = make([]LogEntry, 1)
-	rf.log[0] = LogEntry{0, nil, 0}
+	rf.log[0] = LogEntry{0, nil, true, 0}
 	l := len(peers)
 	rf.nextIndex = make([]int, l, l)
 	for i := range rf.nextIndex {

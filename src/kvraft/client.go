@@ -1,9 +1,10 @@
-package raftkv
+package kvraft
 
 import "labrpc"
 import "crypto/rand"
 import "math/big"
 import "time"
+import "sync"
 
 type Clerk struct {
 	servers    []*labrpc.ClientEnd
@@ -11,6 +12,7 @@ type Clerk struct {
 	// You will have to modify this struct.
 	clientId     int64
 	seriesNumber int
+	mu           sync.Mutex
 }
 
 func nrand() int64 {
@@ -44,12 +46,12 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 //
 func (ck *Clerk) Get(key string) string {
 
+	args := GetArgs{key}
+	reply := GetReply{WrongLeader: true}
 	// You will have to modify this function.
 	for {
 		time.Sleep(100 * time.Millisecond)
 		lastLeader := ck.lastLeader
-		args := GetArgs{key}
-		reply := GetReply{}
 		if lastLeader != nil {
 			lastLeader.Call("KVServer.Get", &args, &reply)
 		}
@@ -65,10 +67,10 @@ func (ck *Clerk) Get(key string) string {
 			}
 		}
 		if reply.Err != "" {
-			DPrintf("Called for key %s, but err: %s", key, reply.Err)
+			// DPrintf("Called for key %s, but err: %s", key, reply.Err)
 			continue
 		}
-		DPrintf("Get value %s for key %s", reply.Value, key)
+		// DPrintf("Client: Get value %s for key %s", reply.Value, key)
 		return reply.Value
 	}
 }
@@ -85,8 +87,11 @@ func (ck *Clerk) Get(key string) string {
 //
 func (ck *Clerk) PutAppend(key string, value string, op string) {
 	// You will have to modify this function.
+	ck.mu.Lock()
+	// DPrintf("Client: Request command %v, %v:%v, seriesNumber=%v, clientId=%v", op, key, value, ck.seriesNumber, ck.clientId)
 	args := PutAppendArgs{key, value, op, ck.seriesNumber, ck.clientId}
 	ck.seriesNumber += 1
+	ck.mu.Unlock()
 	reply := PutAppendReply{WrongLeader: true}
 	for {
 		time.Sleep(100 * time.Millisecond)
@@ -100,7 +105,9 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 				reply = PutAppendReply{}
 				server.Call("KVServer.PutAppend", &args, &reply)
 				if !reply.WrongLeader {
+					ck.mu.Lock()
 					ck.lastLeader = server
+					ck.mu.Unlock()
 					break
 				}
 			}
@@ -109,12 +116,13 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 			DPrintf("Client Error: %v", reply.Err)
 			continue
 		}
-		DPrintf("Command %s %s:%s submitted.", op, key, value)
+		DPrintf("Client: Command %s %s:%s submitted.", op, key, value)
 		return
 	}
 }
 
 func (ck *Clerk) Put(key string, value string) {
+	// DPrintf("Client: Request command %v, %v:%v, seriesNumber=%v, clientId=%v", "put", key, value, ck.seriesNumber, ck.clientId)
 	ck.PutAppend(key, value, "Put")
 }
 func (ck *Clerk) Append(key string, value string) {
