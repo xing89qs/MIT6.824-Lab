@@ -6,9 +6,10 @@ import (
 	"log"
 	"raft"
 	"sync"
+	"time"
 )
 
-const Debug = 1
+const Debug = 0
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
 	if Debug > 0 {
@@ -64,10 +65,45 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 		return
 	}
 	reply.WrongLeader = false
-	key := args.Key
-	value := kv.data[key]
-	reply.Value = value
-	reply.Err = ""
+	opkey := OpKey{args.ClientId, args.SeriesNumber}
+	kv.mu.Lock()
+	l, ok := kv.lastExecuteSerialNumber[args.ClientId]
+	if ok {
+		DPrintf("Calling %v\n, lastExecuteSerialNumber=%v, seriesNumber=%v ", args, l, args.SeriesNumber)
+	} else {
+		DPrintf("not ok for %v on kv %v", args, kv.me)
+	}
+	if lastExecuteSerialNumber, ok := kv.lastExecuteSerialNumber[args.ClientId]; ok && args.SeriesNumber <= lastExecuteSerialNumber {
+		key := args.Key
+		value := kv.data[key]
+		reply.Value = value
+		reply.Err = ""
+		kv.mu.Unlock()
+		return
+	} else {
+		if _, ok := kv.commitChannel[opkey]; !ok {
+			kv.commitChannel[opkey] = make(chan int, 1)
+		}
+		op := Op{args.Key, "", "Get", args.SeriesNumber, args.ClientId}
+		index, term, isLeader := kv.rf.Start(op)
+		DPrintf("Start %v on kv %v, index = %v, term=%v, isLeader=%v", op, kv.me, index, term, isLeader)
+	}
+	commitChannel := kv.commitChannel[opkey]
+	kv.mu.Unlock()
+	select {
+	case <-commitChannel:
+		reply.Err = ""
+		kv.mu.Lock()
+		key := args.Key
+		value := kv.data[key]
+		reply.Value = value
+		reply.Err = ""
+		DPrintf("get key = %s, ClientId=%v, seriesNumber= %v, value=%v", args.Key, args.ClientId, args.SeriesNumber, value)
+		kv.mu.Unlock()
+	case <-time.After(500 * time.Millisecond):
+		DPrintf("Get %v timeout!", args.Key)
+		reply.Err = "Operation timeout!"
+	}
 }
 
 func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
@@ -87,19 +123,25 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		kv.mu.Unlock()
 		return
 	}
-	if lastSerialNumber, ok := kv.lastExecuteSerialNumber[args.ClientId]; ok && args.SeriesNumber <= lastSerialNumber {
+	if lastExecuteSerialNumber, ok := kv.lastExecuteSerialNumber[args.ClientId]; ok && args.SeriesNumber <= lastExecuteSerialNumber {
+		reply.Err = ""
 		kv.mu.Unlock()
 		return
 	} else {
 		if _, ok := kv.commitChannel[opkey]; !ok {
 			kv.commitChannel[opkey] = make(chan int, 1)
 		}
-		_, _, isLeader = kv.rf.Start(op)
+		index, term, isLeader := kv.rf.Start(op)
+		DPrintf("Start %v on kv %v, index = %v, term=%v, isLeader=%v", op, kv.me, index, term, isLeader)
 	}
+	commitChannel := kv.commitChannel[opkey]
 	kv.mu.Unlock()
 	select {
-	case <-kv.commitChannel[opkey]:
+	case <-commitChannel:
 		reply.Err = ""
+	case <-time.After(500 * time.Millisecond):
+		DPrintf("Operation %v timeout!", op)
+		reply.Err = "Operation timeout!"
 	}
 }
 
@@ -110,16 +152,24 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 // turn off debug output from this instance.
 //
 func (kv *KVServer) Kill() {
-	//DPrintf("Server command %s: %s %s, %v, lastExecuteSerialNumber: %v, rf_state = %v", op.Command, op.Key, op.Value, seriesNumber, kv.lastExecuteSerialNumber[opkey.ClientId], isL)
+	DPrintf("kill %v", kv.me)
 	kv.rf.Kill()
 	// Your code here, if desired.
 	kv.quit <- 0
 }
 
 func (kv *KVServer) execute(op *Op) {
-	//DPrintf("Execute %v", op)
+	DPrintf("enter %v on kv %v", op, kv.me)
+	defer DPrintf("leave %v on kv %v", op, kv.me)
 	kv.mu.Lock()
+	if lastExecuteSerialNumber, ok := kv.lastExecuteSerialNumber[op.ClientId]; ok && op.SeriesNumber <= lastExecuteSerialNumber {
+		DPrintf("duplicate command %v on kv %v", op, kv.me)
+		kv.mu.Unlock()
+		return
+	}
+	DPrintf("kv %v Execute %v on kv %v", kv.me, op, kv.me)
 	value, ok := kv.data[op.Key]
+	opkey := OpKey{op.ClientId, op.SeriesNumber}
 	if !ok {
 		value = ""
 	}
@@ -127,16 +177,28 @@ func (kv *KVServer) execute(op *Op) {
 		value = value + op.Value
 	} else if op.Command == PUT {
 		value = op.Value
+	} else if op.Command == GET {
+		commitChannel, ok := kv.commitChannel[opkey]
+		kv.lastExecuteSerialNumber[op.ClientId] = op.SeriesNumber
+		DPrintf("Set lastExecuteSerialNumber %v to %v on %v", op.ClientId, op.SeriesNumber, kv.me)
+		kv.mu.Unlock()
+		if ok {
+			commitChannel <- 1
+		}
+		return
 	} else {
 		log.Printf("Invalid command %s!", op.Command)
 		kv.mu.Unlock()
 		return
 	}
 	kv.data[op.Key] = value
-	opkey := OpKey{op.ClientId, op.SeriesNumber}
 	kv.lastExecuteSerialNumber[op.ClientId] = op.SeriesNumber
+	commitChannel, ok := kv.commitChannel[opkey]
+	DPrintf("now key=\"%s\", value=\"%s\"", op.Key, value)
 	kv.mu.Unlock()
-	kv.commitChannel[opkey] <- 1
+	if ok {
+		commitChannel <- 1
+	}
 }
 
 func (kv *KVServer) monitorApplyCh(applyCh chan raft.ApplyMsg) {

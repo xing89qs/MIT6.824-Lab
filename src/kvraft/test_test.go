@@ -213,7 +213,6 @@ func GenericTest(t *testing.T, part string, nclients int, unreliable bool, crash
 				} else {
 					// log.Printf("%d: client new get %v\n", cli, key)
 					v := Get(cfg, myck, key)
-					DPrintf("last1 = %v", last)
 					if v != last {
 						log.Fatalf("get wrong value, key %v, wanted:\n%v\n, got\n%v\n", key, last, v)
 					}

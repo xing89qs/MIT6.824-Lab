@@ -28,6 +28,8 @@ type PutAppendReply struct {
 type GetArgs struct {
 	Key string
 	// You'll have to add definitions here.
+	SeriesNumber int
+	ClientId     int64
 }
 
 type GetReply struct {

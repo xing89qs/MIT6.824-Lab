@@ -292,14 +292,14 @@ func (rf *Raft) apply() {
 }
 
 func compareLog(log1 LogEntry, log2 LogEntry) bool {
-	DPrintf3("%v %v %v", log1.Command, log2.Command, log1.Command == log2.Command)
+	// DPrintf3("%v %v %v", log1.Command, log2.Command, log1.Command == log2.Command)
 	return log1.Term == log2.Term && log1.Command == log2.Command
 }
 
 func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply) {
 	rf.mu.Lock()
 	// DPrintf3("%v %v %v", rf.me, args, reply)
-	DPrintf2("handleAppendEntries in %v from %v", rf.me, args.LeaderIndex)
+	// DPrintf3("handleAppendEntries in %v from %v", rf.me, args.LeaderIndex)
 	rf.lastReceivedFromLeader = NowMilli()
 	reply.Term = rf.currentTerm
 	if args.Term < rf.currentTerm {
@@ -480,11 +480,17 @@ func (rf *Raft) BecomeLeader() {
 				cnt += 1
 			}
 		}
+		// DPrintf3("index: %v cnt: %v, term: %v", i, cnt, rf.log[i].Term)
 		if cnt >= len(rf.peers)/2 {
 			rf.commitIndex = i
 			break
 		}
 	}
+	// DPrintf3("rf_id: %v, rf.commitIndex = %v ", rf.me, rf.commitIndex)
+	// for i, _ := range rf.peers {
+	// 	fmt.Printf("%d ", rf.matchIndex[i])
+	// }
+	// fmt.Printf("\n")
 	for i, _ := range rf.peers {
 		if i == rf.me {
 			continue
@@ -493,7 +499,7 @@ func (rf *Raft) BecomeLeader() {
 			rf.mu.RLock()
 			var entry []LogEntry
 			var args AppendEntriesArgs
-			DPrintf2("Try entry: len = %v, id =  %v", len(rf.log), rf.nextIndex[id])
+			// DPrintf3("Try entry: len = %v, id = %v, nextIndex =  %v, matchIndex = %v", len(rf.log), id, rf.nextIndex[id], rf.matchIndex[id])
 			entry = make([]LogEntry, len(rf.log)-rf.nextIndex[id])
 			for j, e := range rf.log[rf.nextIndex[id]:] {
 				entry[j].Index = e.Index
@@ -513,7 +519,7 @@ func (rf *Raft) BecomeLeader() {
 				rf.mu.Unlock()
 				return
 			}
-			// DPrintf3("try to send rpc from %v to %v with %v logs, %v", rf.me, id, len(args.Entries), ok)
+			// DPrintf3("try to send rpc from %v to %v with %v logs, ret: %v", rf.me, id, len(args.Entries), ok)
 			if ok {
 				if reply.Term > rf.currentTerm {
 					rf.currentTerm = reply.Term
@@ -590,7 +596,9 @@ func (rf *Raft) LeaderElection() {
 LEADER_ELECTION_LOOP:
 	for {
 		rf.mu.Lock()
-		//DPrintf3("current %v: term = %v, state = %s, commit = %v, log = %v", rf.me, rf.currentTerm, rf.state, rf.commitIndex, len(rf.log))
+		//if rf.state == LEADER {
+		// DPrintf3("current %v: term = %v, state = %s, commit = %v, log = %v", rf.me, rf.currentTerm, rf.state, rf.commitIndex, len(rf.log))
+		// }
 		state := rf.state
 		rf.mu.Unlock()
 		switch state {
