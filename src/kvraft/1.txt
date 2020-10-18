@@ -1,0 +1,981 @@
+[rf 0]len = 1
+[rf 0]len = 1
+[rf 0]len = 1
+[rf 1]len = 1
+[rf 2]len = 1
+[rf 1]len = 1
+[rf 0]len = 1
+[rf 1]len = 1
+[rf 2]len = 1
+[rf 2]len = 1
+[rf 1]len = 1
+[rf 4]len = 1
+Test: restarts, snapshots, many clients (3B) ...
+[rf 3]len = 1
+[rf 3]len = 1
+[rf 3]len = 1
+[rf 3]len = 1
+[rf 4]len = 1
+[rf 4]len = 1
+[rf 2]len = 1
+[rf 4]len = 1
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 4]lock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 4]lock append
+[kv 0]lock append
+[kv 1]lock append
+[kv 3] unlock append
+[kv 4]lock in append
+[kv 0] unlock append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1] unlock append
+[kv 0]lock append
+[kv 2] unlock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 1]lock in append
+[kv 0]lock in append
+[kv 3]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 1] unlock append
+[kv 0] unlock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4]lock append
+[kv 1]lock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4]lock append
+[kv 1]lock append
+[kv 2]lock append
+[kv 3]lock append
+[kv 4]lock in append
+[kv 3]lock in append
+[kv 4]lock in append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 1]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 2]lock in append
+[kv 1]lock append
+[kv 2] unlock append
+[kv 3] unlock append
+[kv 3]lock append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 4]lock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 4] unlock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 1] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 3] unlock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 1]lock append
+[kv 4]lock in append
+[kv 0]lock append
+[kv 4] unlock append
+[kv 2]lock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2]lock append
+[kv 4]lock append
+[kv 4]lock append
+[kv 0]lock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 1]lock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 4]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock in append
+[kv 4]lock in append
+[kv 1]lock in append
+[kv 4]lock in append
+[kv 1]lock in append
+[kv 4] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4] unlock append
+[kv 0] unlock append
+[kv 1] unlock append
+[kv 1] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock in append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2] unlock append
+[kv 2] unlock append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 3]lock append
+[kv 2]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock append
+[kv 4]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4]lock append
+[kv 1] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0] unlock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 4]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 1]lock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 1]lock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 1]lock in append
+[kv 3]lock append
+[kv 3]lock append
+[kv 4]lock append
+[kv 3]lock append
+[kv 4]lock in append
+[kv 1] unlock append
+[kv 1]lock in append
+[kv 3]lock in append
+[kv 1] unlock append
+[kv 4] unlock append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 4]lock append
+[kv 3] unlock append
+[kv 4]lock in append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 1]lock append
+[kv 4]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 2] unlock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 3]lock append
+[kv 4] unlock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 2]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 1] unlock append
+[kv 2]lock append
+[kv 2]lock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 2]lock in append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 2] unlock append
+[kv 0] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 1]lock append
+[kv 4] unlock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 1] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 0]lock append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 2]lock append
+[kv 0]lock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 3] unlock append
+[kv 4] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 1]lock append
+[kv 3] unlock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 2]lock append
+[kv 1] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 3]lock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 0] unlock append
+[kv 4] unlock append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 2]lock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 1]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1]lock append
+[kv 2]lock append
+[kv 3] unlock append
+[kv 2]lock in append
+[kv 2]lock append
+[kv 2]lock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 2]lock append
+[kv 1]lock append
+[kv 1] unlock append
+[kv 1] unlock append
+[kv 4] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2] unlock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 4]lock append
+[kv 1]lock append
+[kv 3]lock append
+[kv 3] unlock append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 3]lock append
+[kv 1] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0]lock append
+[kv 0] unlock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 4] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 4]lock append
+[kv 2]lock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 1]lock append
+[kv 0] unlock append
+[kv 0]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2] unlock append
+[kv 4]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4] unlock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1]lock append
+[kv 1] unlock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 1] unlock append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 3]lock append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 3]lock in append
+[kv 4] unlock append
+[kv 3] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 3] unlock append
+[kv 1] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 4]lock append
+[kv 4]lock in append
+[kv 4] unlock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 0] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 1]lock append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 1]lock append
+[kv 0]lock append
+[kv 0]lock in append
+[kv 1]lock in append
+[kv 1] unlock append
+[kv 0] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 3]lock append
+[kv 3]lock in append
+[kv 3] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 2]lock append
+[kv 2]lock in append
+[kv 2] unlock append
+[kv 0]lock append
+signal: interrupt
+FAIL	kvraft	0.265s

@@ -1,10 +1,12 @@
 package kvraft
 
-import "labrpc"
-import "crypto/rand"
-import "math/big"
-import "time"
-import "sync"
+import (
+	"crypto/rand"
+	"labrpc"
+	"math/big"
+	"sync"
+	"time"
+)
 
 type Clerk struct {
 	servers    []*labrpc.ClientEnd
@@ -50,23 +52,22 @@ func (ck *Clerk) Get(key string) string {
 	args := GetArgs{key, ck.seriesNumber, ck.clientId}
 	ck.seriesNumber += 1
 	ck.mu.Unlock()
-	reply := GetReply{WrongLeader: true}
 	// You will have to modify this function.
 	for {
-		time.Sleep(100 * time.Millisecond)
+		reply := GetReply{}
 		lastLeader := ck.lastLeader
-		reply.Err = ""
-		reply.WrongLeader = true
 		if lastLeader != nil {
 			ok := lastLeader.Call("KVServer.Get", &args, &reply)
 			if !ok {
 				reply.Err = "RPC timeout"
 				reply.WrongLeader = true
+			} else if !reply.WrongLeader && reply.Err == "" {
+				DPrintf("Client: Get value %s for key %s\n", reply.Value, key)
+				return reply.Value
 			}
 		}
-		if reply.WrongLeader {
+		if reply.WrongLeader || lastLeader == nil {
 			for _, server := range ck.servers {
-				time.Sleep(time.Duration(100) * time.Millisecond)
 				reply = GetReply{}
 				ok := server.Call("KVServer.Get", &args, &reply)
 				if !ok {
@@ -75,16 +76,18 @@ func (ck *Clerk) Get(key string) string {
 					ck.mu.Lock()
 					ck.lastLeader = server
 					ck.mu.Unlock()
-					break
+					if reply.Err == "" {
+						DPrintf("Client: Get value %s for key %s\n", reply.Value, key)
+						return reply.Value
+					}
 				}
+				time.Sleep(time.Duration(10) * time.Millisecond)
 			}
 		}
 		if reply.Err != "" {
 			DPrintf("Called for key %s, but err: %s", key, reply.Err)
-			continue
 		}
-		DPrintf("Client: Get value %s for key %s", reply.Value, key)
-		return reply.Value
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
@@ -105,23 +108,22 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 	args := PutAppendArgs{key, value, op, ck.seriesNumber, ck.clientId}
 	ck.seriesNumber += 1
 	ck.mu.Unlock()
-	reply := PutAppendReply{WrongLeader: true}
 	for {
-		time.Sleep(100 * time.Millisecond)
+		reply := PutAppendReply{}
 		lastLeader := ck.lastLeader
-		reply.Err = ""
-		reply.WrongLeader = true
 		if lastLeader != nil {
 			ok := lastLeader.Call("KVServer.PutAppend", &args, &reply)
 			if !ok {
 				reply.Err = "RPC timeout"
 				reply.WrongLeader = true
+			} else if !reply.WrongLeader && reply.Err == "" {
+				DPrintf("Client: Command %s %s:%s submitted.", op, key, value)
+				return
 			}
 		}
-		if reply.WrongLeader {
+		if reply.WrongLeader || lastLeader == nil {
 			for _, server := range ck.servers {
-				time.Sleep(time.Duration(100) * time.Millisecond)
-				reply = PutAppendReply{}
+				reply := PutAppendReply{}
 				ok := server.Call("KVServer.PutAppend", &args, &reply)
 				if !ok {
 					reply.Err = "RPC timeout"
@@ -129,16 +131,18 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 					ck.mu.Lock()
 					ck.lastLeader = server
 					ck.mu.Unlock()
-					break
+					if reply.Err == "" {
+						DPrintf("Client: Command %s %s:%s submitted.", op, key, value)
+						return
+					}
 				}
+				time.Sleep(time.Duration(10) * time.Millisecond)
 			}
 		}
 		if reply.Err != "" {
 			DPrintf("Client Error: %v", reply.Err)
-			continue
 		}
-		DPrintf("Client: Command %s %s:%s submitted.", op, key, value)
-		return
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
