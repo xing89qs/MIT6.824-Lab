@@ -98,10 +98,14 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 		kv.mu.Unlock()
 		kv.ulk("get")
 		index, term, isLeader := kv.rf.Start(op)
+		kv.mu.Lock()
 		fmt.Printf("Start %v on kv %v, index = %v, term=%v, isLeader=%v\n", op, kv.me, index, term, isLeader)
+		kv.mu.Unlock()
 		kv.checkIfSnapShot()
+		kv.mu.Lock()
 	}
 	commitChannel := kv.commitChannel[opkey]
+	kv.mu.Unlock()
 	select {
 	case <-commitChannel:
 		reply.Err = ""
@@ -152,12 +156,16 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		kv.mu.Unlock()
 		kv.ulk("append")
 		index, term, isLeader := kv.rf.Start(op)
+		kv.mu.Lock()
 		kv.lk("append1")
 		fmt.Printf("Start %v on kv %v, index = %v, term=%v, isLeader=%v\n", op, kv.me, index, term, isLeader)
 		// fmt.Printf("%v\n", kv.lastExecuteSerialNumber[args.ClientId])
+		kv.mu.Unlock()
 		kv.checkIfSnapShot()
+		kv.mu.Lock()
 	}
 	commitChannel := kv.commitChannel[opkey]
+	kv.mu.Unlock()
 	kv.ulk("append")
 	select {
 	case <-commitChannel:
