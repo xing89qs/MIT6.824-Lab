@@ -455,7 +455,7 @@ func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply)
 		// rf.Log("Entries from rf %v has larger term %v, currentTerm = %v.\n", args.LeaderIndex, args.Term, rf.currentTerm)
 		rf.lastReceivedFromLeader = NowMilli()
 		rf.currentTerm = args.Term
-		rf.Log("BecomeFollower\n")
+		// rf.Log("BecomeFollower\n")
 		rf.BecomeFollower()
 		rf.unlock("AppendEntries")
 		rf.PersistSnapShotAndState(nil, -1)
@@ -466,9 +466,9 @@ func (rf *Raft) AppendEntries(args AppendEntriesArgs, reply *AppendEntriesReply)
 		if args.PrevLogIndex >= len(rf.log)+rf.snapshotIndex ||
 			(args.PrevLogIndex >= rf.snapshotIndex &&
 				args.PrevLogTerm != rf.log[args.PrevLogIndex-rf.snapshotIndex].Term) {
-			if args.PrevLogIndex < len(rf.log)+rf.snapshotIndex {
-				// rf.Log("Entries from rf %v has inconsistent term %v from index %v, currentTerm = %v.\n", args.LeaderIndex, args.PrevLogTerm, args.PrevLogIndex, rf.log[args.PrevLogIndex-rf.snapshotIndex].Term)
-			}
+			// if args.PrevLogIndex < len(rf.log)+rf.snapshotIndex {
+			// rf.Log("Entries from rf %v has inconsistent term %v from index %v, currentTerm = %v.\n", args.LeaderIndex, args.PrevLogTerm, args.PrevLogIndex, rf.log[args.PrevLogIndex-rf.snapshotIndex].Term)
+			// }
 			rf.unlock("AppendEntries")
 			reply.Success = false
 			return
@@ -576,7 +576,7 @@ func NowMilli() int64 {
 
 const ELECTION_TIMEOUT = 300
 const SMALL_SLEEP_GAP = time.Duration(10) * time.Millisecond
-const HEARTBEAT_TIMEOUT = 200
+const HEARTBEAT_TIMEOUT = 100
 
 func getElectionTimeout() time.Duration {
 	return time.Duration(rand.Intn(ELECTION_TIMEOUT) + ELECTION_TIMEOUT)
@@ -598,8 +598,8 @@ func (rf *Raft) BecomeCandidate() {
 	rf.voteCount = 1
 	rf.votedFor = rf.id
 	rf.currentTerm += 1
-	rf.timeout = int64(getElectionTimeout() * 2)
-	// rf.Log("Become candidate, currentTerm = %v\n", rf.currentTerm)
+	rf.timeout = int64(getElectionTimeout())
+	// rf.Log("Become candidate, currentTerm = %v, time: %v\n", rf.currentTerm, time.Now())
 	copiedCurrentTerm := rf.currentTerm
 	rf.lastStartCandidate = NowMilli()
 
@@ -609,7 +609,7 @@ func (rf *Raft) BecomeCandidate() {
 		}
 		go func(id int) {
 			rf.mu.RLock()
-			if rf.state != CANDIDATE {
+			if rf.state != CANDIDATE || rf.currentTerm != copiedCurrentTerm {
 				rf.mu.RUnlock()
 				return
 			}
@@ -620,7 +620,7 @@ func (rf *Raft) BecomeCandidate() {
 			rf.mu.RUnlock()
 			ok := rf.sendRequestVote(id, &args, &reply)
 			if ok {
-				rf.Log("try to send vote rpc from %v to %v, ret: %v, sucess: %v, args.Term = %v\n", rf.me, id, ok, reply.VoteGranted, args.Term)
+				// rf.Log("try to send vote rpc from %v to %v, ret: %v, sucess: %v, args.Term = %v\n", rf.me, id, ok, reply.VoteGranted, args.Term)
 			}
 			rf.lock("BecomeCandidate")
 			if rf.currentTerm != args.Term {
@@ -676,10 +676,10 @@ func (rf *Raft) BecomeLeader() {
 		}
 	}
 	// DPrintf3("rf_id: %v, rf.commitIndex = %v ", rf.me, rf.commitIndex)
-	for i, _ := range rf.peers {
-		fmt.Printf("%d ", rf.matchIndex[i])
-	}
-	fmt.Printf(" at master [%v], commitIndex = %v, currentTerm = %v, len(log) = %v, lastTerm = %v\n", rf.me, rf.commitIndex, rf.currentTerm, len(rf.log), rf.log[len(rf.log)-1].Term)
+	//	for i, _ := range rf.peers {
+	//		fmt.Printf("%d ", rf.matchIndex[i])
+	//	}
+	// 	fmt.Printf(" at master [%v], commitIndex = %v, currentTerm = %v, len(log) = %v, lastTerm = %v\n", rf.me, rf.commitIndex, rf.currentTerm, len(rf.log), rf.log[len(rf.log)-1].Term)
 	for i, _ := range rf.peers {
 		if i == rf.me {
 			continue
@@ -714,7 +714,7 @@ func (rf *Raft) BecomeLeader() {
 				return
 			}
 			if ok {
-				rf.Log("try to send rpc from %v to %v with %v logs, ret: %v, sucess: %v, leaderCommit: %d, LastLogIndex = %v, lastIndexTerm = %v\n", rf.me, id, len(args.Entries), ok, reply.Success, rf.commitIndex, args.PrevLogIndex, args.PrevLogTerm)
+				// rf.Log("try to send rpc from %v to %v with %v logs, ret: %v, sucess: %v, leaderCommit: %d, LastLogIndex = %v, lastIndexTerm = %v\n", rf.me, id, len(args.Entries), ok, reply.Success, rf.commitIndex, args.PrevLogIndex, args.PrevLogTerm)
 				if reply.Term > rf.currentTerm {
 					rf.currentTerm = reply.Term
 					rf.BecomeFollower()
@@ -770,7 +770,7 @@ func Max(x, y int64) int64 {
 func (rf *Raft) ApplyLogEntry() {
 	for {
 		rf.mu.RLock()
-		if rf.state == DEAD {
+		if rf.isDead {
 			rf.mu.RUnlock()
 			break
 		}

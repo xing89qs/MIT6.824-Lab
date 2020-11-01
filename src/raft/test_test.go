@@ -768,6 +768,10 @@ func TestUnreliableAgree2C(t *testing.T) {
 	cfg.end()
 }
 
+func NowMilli1() int64 {
+	return time.Now().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+}
+
 func TestFigure8Unreliable2C(t *testing.T) {
 	servers := 5
 	cfg := make_config(t, servers, true)
@@ -778,7 +782,10 @@ func TestFigure8Unreliable2C(t *testing.T) {
 	cfg.one(rand.Int()%10000, 1, true)
 
 	nup := servers
+	last := NowMilli1()
 	for iters := 0; iters < 1000; iters++ {
+		fmt.Printf("***************[Iter %v]*****************i, time = %v\n", iters, NowMilli1()-last)
+		last = NowMilli()
 		if iters == 200 {
 			cfg.setlongreordering(true)
 		}
@@ -792,6 +799,7 @@ func TestFigure8Unreliable2C(t *testing.T) {
 
 		if (rand.Int() % 1000) < 100 {
 			ms := rand.Int63() % (int64(RaftElectionTimeout/time.Millisecond) / 2)
+			fmt.Printf("sleep %v\n", ms)
 			time.Sleep(time.Duration(ms) * time.Millisecond)
 		} else {
 			ms := (rand.Int63() % 13)
