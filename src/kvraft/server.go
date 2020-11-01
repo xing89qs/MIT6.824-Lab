@@ -2,7 +2,6 @@ package kvraft
 
 import (
 	"bytes"
-	"fmt"
 	"labgob"
 	"labrpc"
 	"log"
@@ -97,9 +96,9 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 		op := Op{args.Key, "", "Get", args.SeriesNumber, args.ClientId}
 		kv.mu.Unlock()
 		kv.ulk("get")
-		index, term, isLeader := kv.rf.Start(op)
+		kv.rf.Start(op)
 		kv.mu.Lock()
-		fmt.Printf("Start %v on kv %v, index = %v, term=%v, isLeader=%v\n", op, kv.me, index, term, isLeader)
+		// fmt.Printf("Start %v on kv %v, index = %v, term=%v, isLeader=%v\n", op, kv.me, index, term, isLeader)
 		kv.mu.Unlock()
 		kv.checkIfSnapShot()
 		kv.mu.Lock()
@@ -114,7 +113,7 @@ func (kv *KVServer) Get(args *GetArgs, reply *GetReply) {
 		value := kv.data[key]
 		reply.Value = value
 		reply.Err = ""
-		DPrintf("get key = %s, ClientId=%v, seriesNumber= %v, value=%v", args.Key, args.ClientId, args.SeriesNumber, value)
+		// DPrintf("get key = %s, ClientId=%v, seriesNumber= %v, value=%v", args.Key, args.ClientId, args.SeriesNumber, value)
 		kv.mu.Unlock()
 	case <-time.After(500 * time.Millisecond):
 		DPrintf("Get %v timeout!", args.Key)
@@ -155,10 +154,10 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 		}
 		kv.mu.Unlock()
 		kv.ulk("append")
-		index, term, isLeader := kv.rf.Start(op)
+		kv.rf.Start(op)
 		kv.mu.Lock()
 		kv.lk("append1")
-		fmt.Printf("Start %v on kv %v, index = %v, term=%v, isLeader=%v\n", op, kv.me, index, term, isLeader)
+		// fmt.Printf("Start %v on kv %v, index = %v, term=%v, isLeader=%v\n", op, kv.me, index, term, isLeader)
 		// fmt.Printf("%v\n", kv.lastExecuteSerialNumber[args.ClientId])
 		kv.mu.Unlock()
 		kv.checkIfSnapShot()
@@ -182,8 +181,8 @@ func (kv *KVServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) {
 // turn off debug output from this instance.
 //
 func (kv *KVServer) Kill() {
-	fmt.Printf("kill %v\n", kv.me)
-	DPrintf("kill %v", kv.me)
+	// fmt.Printf("kill %v\n", kv.me)
+	// DPrintf("kill %v", kv.me)
 	kv.rf.Kill()
 	// Your code here, if desired.
 	kv.quit <- 0
@@ -205,7 +204,7 @@ func (kv *KVServer) execute(op *Op, index int) {
 		DPrintf("Already executed command %v on kv %v", op, kv.me)
 		return
 	}
-	fmt.Printf("[kv %v] Execute %v on kv %v at index %v\n", kv.me, op, kv.me, index)
+	// fmt.Printf("[kv %v] Execute %v on kv %v at index %v\n", kv.me, op, kv.me, index)
 	value, ok := kv.data[op.Key]
 	opkey := OpKey{op.ClientId, op.SeriesNumber}
 	if !ok {
@@ -261,7 +260,7 @@ func (kv *KVServer) ReadSnapshot(data []byte) {
 	if d.Decode(&kv.data) != nil || d.Decode(&kv.lastExecuteSerialNumber) != nil || d.Decode(&kv.lastExecuteRaftIndex) != nil {
 		log.Fatalf("Error: Failed to read snapshot, kv = %v, len = %v!", kv.me, len(data))
 	}
-	fmt.Printf("[kv %v] change to lastExecuteRaftIndex: %v\n", kv.me, kv.lastExecuteRaftIndex)
+	// fmt.Printf("[kv %v] change to lastExecuteRaftIndex: %v\n", kv.me, kv.lastExecuteRaftIndex)
 	// fmt.Printf("kv server %v read map: %v\n", kv.me, kv.data)
 	kv.mu.Unlock()
 	kv.ulk("read snapshot")

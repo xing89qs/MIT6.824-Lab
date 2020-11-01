@@ -48,7 +48,7 @@ func MakeClerk(servers []*labrpc.ClientEnd) *Clerk {
 //
 func (ck *Clerk) Get(key string) string {
 	ck.mu.Lock()
-	DPrintf("Client: Request command %v, key=%s, seriesNumber=%v, clientId=%v", "Get", key, ck.seriesNumber, ck.clientId)
+	// DPrintf("Client: Request command %v, key=%s, seriesNumber=%v, clientId=%v", "Get", key, ck.seriesNumber, ck.clientId)
 	args := GetArgs{key, ck.seriesNumber, ck.clientId}
 	ck.seriesNumber += 1
 	ck.mu.Unlock()
@@ -104,7 +104,7 @@ func (ck *Clerk) Get(key string) string {
 func (ck *Clerk) PutAppend(key string, value string, op string) {
 	// You will have to modify this function.
 	ck.mu.Lock()
-	DPrintf("Client: Request command %v, %v:%v, seriesNumber=%v, clientId=%v", op, key, value, ck.seriesNumber, ck.clientId)
+	// DPrintf("Client: Request command %v, %v:%v, seriesNumber=%v, clientId=%v", op, key, value, ck.seriesNumber, ck.clientId)
 	args := PutAppendArgs{key, value, op, ck.seriesNumber, ck.clientId}
 	ck.seriesNumber += 1
 	ck.mu.Unlock()
