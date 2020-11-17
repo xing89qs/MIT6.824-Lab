@@ -249,7 +249,7 @@ type RequestVoteReply struct {
 }
 
 func (rf *Raft) Log(format string, a ...interface{}) {
-	// fmt.Printf("[rf %v]: "+format, append([]interface{}{rf.me}, a...)...)
+	fmt.Printf("[rf %v]: "+format, append([]interface{}{rf.me}, a...)...)
 }
 
 //
@@ -377,8 +377,15 @@ func (rf *Raft) apply() {
 	}
 }
 
+func encode(v interface{}) []byte {
+	w := new(bytes.Buffer)
+	e := labgob.NewEncoder(w)
+	e.Encode(v)
+	return w.Bytes()
+}
+
 func compareLog(log1 LogEntry, log2 LogEntry) bool {
-	return log1.Term == log2.Term && log1.Command == log2.Command
+	return log1.Term == log2.Term && bytes.Equal(encode(log1.Command), encode(log2.Command))
 }
 
 func (rf *Raft) ApplySnapshot(data []byte, snapshotIndex int, logs []LogEntry) {
@@ -691,11 +698,11 @@ func (rf *Raft) BecomeLeader() {
 			break
 		}
 	}
-	// DPrintf3("rf_id: %v, rf.commitIndex = %v ", rf.me, rf.commitIndex)
-	//	for i, _ := range rf.peers {
-	//		fmt.Printf("%d ", rf.matchIndex[i])
-	//	}
-	// 	fmt.Printf(" at master [%v], commitIndex = %v, currentTerm = %v, len(log) = %v, lastTerm = %v\n", rf.me, rf.commitIndex, rf.currentTerm, len(rf.log), rf.log[len(rf.log)-1].Term)
+	DPrintf3("rf_id: %v, rf.commitIndex = %v ", rf.me, rf.commitIndex)
+	for i, _ := range rf.peers {
+		fmt.Printf("%d ", rf.matchIndex[i])
+	}
+	fmt.Printf(" at master [%v], commitIndex = %v, currentTerm = %v, len(log) = %v, lastTerm = %v\n", rf.me, rf.commitIndex, rf.currentTerm, len(rf.log), rf.log[len(rf.log)-1].Term)
 	for i, _ := range rf.peers {
 		if i == rf.me {
 			continue

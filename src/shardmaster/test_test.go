@@ -1,12 +1,12 @@
 package shardmaster
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 )
 
 // import "time"
-import "fmt"
 
 func check(t *testing.T, groups []int, ck *Clerk) {
 	c := ck.Query(-1)
@@ -57,6 +57,7 @@ func check_same_config(t *testing.T, c1 Config, c2 Config) {
 		t.Fatalf("Num wrong")
 	}
 	if c1.Shards != c2.Shards {
+		fmt.Printf("%v %v", c1.Shards, c2.Shards)
 		t.Fatalf("Shards wrong")
 	}
 	if len(c1.Groups) != len(c2.Groups) {
@@ -95,7 +96,6 @@ func TestBasic(t *testing.T) {
 	ck.Join(map[int][]string{gid1: []string{"x", "y", "z"}})
 	check(t, []int{gid1}, ck)
 	cfa[1] = ck.Query(-1)
-
 	var gid2 int = 2
 	ck.Join(map[int][]string{gid2: []string{"a", "b", "c"}})
 	check(t, []int{gid1, gid2}, ck)
